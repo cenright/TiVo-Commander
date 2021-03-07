@@ -68,19 +68,43 @@ public class Connect extends Activity {
     super.onResume();
     Utils.log("Activity:Resume:Connect");
 
-    // However we're connecting, now is a good time to (re-)start caching.
-    HttpResponseCache cache = HttpResponseCache.getInstalled();
-    if (cache != null) {
-      cache.flush();
-    }
-    try {
-      File httpCacheDir = new File(this.getCacheDir(), "http");
-      long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
-      HttpResponseCache.install(httpCacheDir, httpCacheSize);
-    } catch (IOException e) {
-      Utils.logError("HTTP response cache installation failed:", e);
-    }
 
+   
+    // However we're connecting, now is a good time to (re-)start caching.
+    //HttpResponseCache cache = HttpResponseCache.getInstalled();
+    //if (cache != null) {
+    //  cache.flush();
+    //}
+
+    try {
+    	HttpResponseCache cache = (HttpResponseCache)Class.forName("android.net.http.HttpResponseCache")
+        .getMethod("getInstalled", File.class, long.class)
+        .invoke(null);
+    	
+    } catch (Exception httpResponseCacheNotAvailable) {
+        Utils.logError("HTTP response cache getinstallation failed:", httpResponseCacheNotAvailable);
+    }    
+
+    
+    //try {
+    //  File httpCacheDir = new File(this.getCacheDir(), "http");
+    //  long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
+    //  HttpResponseCache.install(httpCacheDir, httpCacheSize);
+    //} catch (IOException e) {
+    //  Utils.logError("HTTP response cache installation failed:", e);
+    //}
+
+    try {
+        File httpCacheDir = new File(this.getCacheDir(), "http");
+        long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
+        Class.forName("android.net.http.HttpResponseCache")
+                .getMethod("install", File.class, long.class)
+                .invoke(null, httpCacheDir, httpCacheSize);
+    } catch (Exception httpResponseCacheNotAvailable) {
+        Utils.logError("HTTP response cache installation failed:", httpResponseCacheNotAvailable);
+    }    
+    
+    
     // Start on a separate thread so this UI shows immediately.
     mConnectThread = new Thread(new Runnable() {
       public void run() {

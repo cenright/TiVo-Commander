@@ -21,8 +21,11 @@ package com.arantius.tivocommander;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
@@ -40,6 +43,8 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.MulticastLock;
@@ -297,9 +302,32 @@ public class Discover extends ListActivity implements OnItemClickListener,
       return;
     }
 
+    String ip = "";
+
+    try {
+    	  
+        ip = info.getHostAddresses()[0];
+    }
+    catch(Throwable er){
+        Utils.logError("Discovery serviceResolved() - getHostAddresses()[0]:", er);
+    }
+
+    if(ip.equals(""))
+    try {
+  	  
+        ip = info.getHostAddress();
+     }
+     catch(Throwable er){
+         Utils.logError("Discovery serviceResolved() - getHostAddresse():", er);
+    }
+    
+    //InetAddress ba = info.getAddress();
+    Utils.log("Discovery serviceResolved() - IP:" + ip);
+
     checkDevice(
         event.getName().replaceAll(" \\(\\d\\)$", ""),
-        info.getHostAddresses()[0],
+//        info.getHostAddresses()[0],
+        ip,
         Integer.toString(info.getPort()),
         info.getPropertyString("platform"),
         info.getType(),
@@ -312,6 +340,33 @@ public class Discover extends ListActivity implements OnItemClickListener,
     startActivity(intent);
   }
 
+  public String getLocalIpAddress() {
+	  String result = "";
+      try {
+          for (Enumeration<NetworkInterface> en = NetworkInterface
+                  .getNetworkInterfaces(); en.hasMoreElements();) {
+              NetworkInterface intf = en.nextElement();
+              for (Enumeration<InetAddress> enumIpAddr = intf
+                      .getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                  InetAddress inetAddress = enumIpAddr.nextElement();
+
+                  Utils.log("getLocalIpAddress Found: " + inetAddress.getHostAddress());
+                  Utils.log("test Found: " + inetAddress);
+                  
+
+                  
+                  if (!inetAddress.isLoopbackAddress()) {
+                	  result = inetAddress.getHostAddress().toString();
+                      //return inetAddress.getHostAddress().toString();
+                  }
+              }
+          }
+      } catch (SocketException ex) {
+          Utils.logError("getLocalIpAddress Failed: ", ex);
+      }
+      return result;
+  }
+  
   public final void startQuery(View v) {
     mHosts.clear();
     mHostAdapter.notifyDataSetChanged();
@@ -341,6 +396,16 @@ public class Discover extends ListActivity implements OnItemClickListener,
       return;
     }
 
+    //Utils.toast(this, "Discover; os.name = " + osName, Toast.LENGTH_LONG);
+    
+    if (false) {
+        if (true) {
+          Utils.toast(this, "Discover; os.name = " + osName, Toast.LENGTH_LONG);
+        }
+        findViewById(R.id.refresh_button).setVisibility(View.GONE);
+        return;
+      }
+
     stopQuery();
     Utils.log("Start discovery query ...");
     mEmpty.setText("Searching ...");
@@ -354,6 +419,7 @@ public class Discover extends ListActivity implements OnItemClickListener,
 
         Utils.log("Starting discovery via wifi: " + wifiInfo.toString());
         int intaddr = wifiInfo.getIpAddress();
+        
         if (intaddr == 0) {
           runOnUiThread(new Runnable() {
             public void run() {
@@ -363,6 +429,27 @@ public class Discover extends ListActivity implements OnItemClickListener,
           });
           return;
         }
+        
+        String dd = getLocalIpAddress();        
+        Utils.log("Got IP = " + dd);
+
+        //ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        //NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        //networkInfo.
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        Utils.log("NetworkInfo = " + networkInfo);
+        
+        
+        
+        
+        //String ip = ((intaddr >> 24 ) & 0xFF ) + "." +
+        //        ((intaddr >> 16 ) & 0xFF) + "." +
+        //        ((intaddr >> 8 ) & 0xFF) + "." +
+        //        ( intaddr & 0xFF);
+        
+        //Utils.log("WiFi IP = " + ip);
 
         // JmDNS wants an InetAddress; WifiInfo gives us an int.  Convert.
         byte[] byteaddr =
@@ -381,6 +468,8 @@ public class Discover extends ListActivity implements OnItemClickListener,
           return;
         }
 
+        Utils.log("InetAddress = " + addr);
+        
         mMulticastLock =
             wifi.createMulticastLock("DVR Commander for TiVo Lock");
         mMulticastLock.setReferenceCounted(true);

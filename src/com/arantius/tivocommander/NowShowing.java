@@ -27,6 +27,8 @@ import java.util.TimeZone;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -35,6 +37,7 @@ import android.widget.ViewFlipper;
 
 import com.arantius.tivocommander.rpc.MindRpc;
 import com.arantius.tivocommander.rpc.request.BodyConfigSearch;
+import com.arantius.tivocommander.rpc.request.KeyEventSend;
 import com.arantius.tivocommander.rpc.request.OfferSearch;
 import com.arantius.tivocommander.rpc.request.RecordingSearch;
 import com.arantius.tivocommander.rpc.request.VideoPlaybackInfoEventRegister;
@@ -360,6 +363,43 @@ public class NowShowing extends Activity {
     }
   }
 
+  @Override
+  public boolean dispatchKeyEvent(KeyEvent e) {
+		
+		String Key = "";
+		switch (e.getKeyCode()) {
+		case KeyEvent.KEYCODE_MEDIA_PLAY:
+			Key = "play";
+			break;
+		case KeyEvent.KEYCODE_MEDIA_PAUSE:
+			Key = "pause";
+			break;
+			
+		case KeyEvent.KEYCODE_INFO: 
+			Key = "info";
+			break;
+		case KeyEvent.KEYCODE_GUIDE: 
+			Key = "guide";
+			break;
+		case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD: 
+			Key = "advance";
+			break;
+		case KeyEvent.KEYCODE_MEDIA_REWIND: 
+			Key = "replay";
+			break;
+		}
+		
+		if(Key.length() > 0){
+			if (e.getAction() == KeyEvent.ACTION_UP){
+				MindRpc.addRequest(new KeyEventSend(Key), null);
+			}
+			return true;
+			
+		}
+		
+		return super.dispatchKeyEvent(e);
+	}
+  
   public void onClickRemote(View v) {
     MindRpc.addRequest(Remote.viewIdToEvent(v.getId()), null);
   }
